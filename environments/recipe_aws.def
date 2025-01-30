@@ -1,0 +1,70 @@
+# pytorch 2.2
+Bootstrap: docker
+From: nvcr.io/nvidia/pytorch:24.09-py3
+
+%post
+    apt-get update && apt-get install -y locales libsndfile1 ffmpeg libtool libhwloc-dev autoconf automake
+
+    # Remove existing IB libverbs related packages
+    apt-get remove -y --allow-change-held-packages ibverbs-utils libibverbs-dev libibverbs1 libmlx5-1
+
+    # AWS EFA Installer
+    wget https://efa-installer.amazonaws.com/aws-efa-installer-1.34.0.tar.gz
+    tar -xf aws-efa-installer-1.34.0.tar.gz
+    cd aws-efa-installer
+    ./efa_installer.sh -y -g -d --skip-kmod --skip-limit-conf --no-verify
+    cd ..
+
+    # AWS OFI NCCL plugin
+    git clone https://github.com/aws/aws-ofi-nccl.git
+    cd aws-ofi-nccl
+    ./autogen.sh
+    ./configure --prefix=/usr/local --with-libfabric=/opt/amazon/efa/ --with-cuda=/usr/local/cuda
+    make && make install
+    cd ..
+
+    # GDRCopy
+    git clone https://github.com/NVIDIA/gdrcopy.git
+    cd gdrcopy
+    make PREFIX=/usr/local install
+    cd ..
+
+    # install libraries from requirements.txt
+    pip install gpustat h5py albumentations
+    pip install transformers==4.45.2 accelerate==1.0.1 bitsandbytes==0.44.1 peft==0.13.2
+    pip install webdataset==0.2.100 megatron-energon==2.3.0
+    pip install ftfy regex tqdm wandb humanfriendly
+    pip install pycuda==2024.1.2
+
+    # Sentencepiece installation
+    git clone https://github.com/google/sentencepiece
+    cd sentencepiece
+    mkdir build
+    cd build
+    cmake .. -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=/usr/local
+    make -j $(nproc) install
+    cd ../python
+    python setup.py bdist_wheel
+    pip install dist/sentencepiece*.whl
+    cd ../../
+
+    # Set environment variables
+    echo "export LD_LIBRARY_PATH='/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/extras/CUPTI/lib64:/opt/amazon/openmpi/lib:/opt/nccl/build/lib:/opt/amazon/efa/lib:/usr/local:/usr/local/cuda/compat:${LD_LIBRARY_PATH}'" >> $SINGULARITY_ENVIRONMENT
+    echo "export CUDA_HOME=/usr/local/cuda" >> $SINGULARITY_ENVIRONMENT
+    echo "export LC_ALL='en_US.UTF-8'" >> $SINGULARITY_ENVIRONMENT
+    echo "export LIBRARY_PATH='/usr/local/cuda/lib64/stubs:/usr/local:${LIBRARY_PATH}'" >> $SINGULARITY_ENVIRONMENT
+    echo "export PATH=/opt/amazon/openmpi/bin/:/opt/amazon/efa/bin:/usr/bin:/usr/local/bin:${PATH}" >> $SINGULARITY_ENVIRONMENT
+
+    # Locale and other setup
+    locale-gen en_US.UTF-8
+    ldconfig
+
+%environment
+    export LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/extras/CUPTI/lib64:/opt/amazon/openmpi/lib:/opt/nccl/build/lib:/opt/amazon/efa/lib:/usr/local:/usr/local/cuda/compat:${LD_LIBRARY_PATH}"
+    export CUDA_HOME=/usr/local/cuda
+    export LC_ALL='en_US.UTF-8'
+    export LIBRARY_PATH='/usr/local/cuda/lib64/stubs:/usr/local:${LIBRARY_PATH}'
+    export PATH=/opt/amazon/openmpi/bin/:/opt/amazon/efa/bin:/usr/bin:/usr/local/bin:${PATH}
+
+%runscript
+    exec /bin/bash "$@"

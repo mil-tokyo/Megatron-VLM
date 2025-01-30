@@ -1,0 +1,95 @@
+{
+    "Captioning": {
+        "raw": [
+            "Can you briefly explain what you see in the image?",
+            "Describe what's happening in this image in one short sentence.",
+            "Write a short caption that accurately represents the content of this image.",
+            "Please generate a descriptive caption for the image provided.",
+            "How would you summarize the scene depicted in the picture in short?"
+        ]
+    },
+    "OCR": {
+        "raw": [
+            "Can you read the text from image and output here?",
+            "Extract and document the text from the provided image.",
+            "Converting the text embedded in this image into a readable document.",
+            "Transcribe all the text you find.",
+            "Can you extract all visible text from the image here?"
+        ]
+    },
+    "VQA": {
+        "raw": [
+            "Given the image, answer the following question with few words.",
+            "Answer the following question: ",
+            "What is the answer to this question?",
+            "Write the answer: ",
+            "Please answer this question: "
+        ]
+    },
+    "caption_ja": {
+        "raw": [
+            "画像の内容を教えてください。",
+            "この画像を説明できますか？",
+            "画像に何が写っていますか？",
+            "画像の詳細を話してください。",
+            "画像に関する情報を共有して。",
+            "画像を解説してもらえますか？",
+            "この画像の主題は何ですか？",
+            "画像を簡潔に説明してください。",
+            "画像についての概要を教えて。",
+            "この画像に関する基本情報を話してください。",
+            "これは何の写真ですか？",
+            "写真には何が写っていますか？",
+            "写真について説明してください。",
+            "この写真はどういう状況ですか？説明してください。"
+        ]
+    },
+    "detailed_caption_ja":
+    {
+        "raw": [
+            "この画像に何が写っているか詳しく説明してください。",
+            "この画像で何が起こっているかを詳しく説明してください。",
+            "この画像の内容を正確に表す詳細なキャプションを作成してください。",
+            "提供された画像の詳細な記述キャプションを生成してください。",
+            "画像に描かれているシーンを詳しく要約してください。",
+            "画像について詳しく説明して。",
+            "画像について詳細に説明して。",
+            "画像の内容を詳細かつ具体的に説明してください。",
+            "画像について、具体的に説明してください。",
+            "この写真はどういう状況ですか？詳しく説明してください。",
+            "写真について詳しく説明してください。",
+            "これは何の写真か、詳細に説明してください。"
+        ]
+    },
+    "vqa_ja": {
+        "raw": [
+            "この画像を見て、次の質問に簡潔に答えてください。",
+            "次の質問に一言で答えてください。",
+            "この質問の答えは何ですか？",
+            "この質問に短く答えてください。",
+            "この質問に、簡潔かつ明確に回答してください。",
+            "画像についての質問に一単語程度で回答してください。",
+            "質問に対する回答を単語や短いフレーズで記入してください。",
+            "次の指示に、一フレーズで答えてください。",
+            "この指示に、簡潔に一単語程度で回答してください。"
+        ]
+    },
+    "detailed_vqa_ja": {
+        "raw": [
+            "この画像を見て、次の質問に詳しく答えてください。",
+            "次の質問に詳しく答えてください。",
+            "この質問の詳細な答えは何ですか？",
+            "この質問に詳しく答えてください。",
+            "この質問の回答を詳細に記述してください。",
+            "質問に丁寧に回答してください。",
+            "質問に詳細かつ具体的に回答してください。",
+            "詳細な回答をお願いします。",
+            "具体的で詳細な回答をお願いします。",
+            "次の指示に、詳しく回答してください。",
+            "この指示に、詳細かつ具体的に回答してください。",
+            "以下の質問について、画像をもとに的確かつ詳細に答えてください。",
+            "次の質問に対して、画像の特徴や背景を踏まえて丁寧に説明してください。",
+            "画像の情報を利用して、次の質問に正確かつ詳細に答えてください。"
+        ]
+    }
+}

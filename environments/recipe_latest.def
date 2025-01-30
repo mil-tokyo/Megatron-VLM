@@ -1,0 +1,66 @@
+# pytorch 2.2
+Bootstrap: docker
+From: nvcr.io/nvidia/pytorch:24.05-py3
+
+%post
+    apt-get update && apt-get install -y locales libsndfile1 ffmpeg
+
+    # install libraries from requirements.txt
+    pip install gpustat h5py albumentations
+    pip install transformers==4.45.2 accelerate==1.0.1 bitsandbytes==0.44.1 peft==0.13.2
+    pip install webdataset==0.2.100 megatron-energon==2.3.0
+    pip install pycuda==2024.1.2
+    pip uninstall flash-attn -y
+    pip install flash-attn==2.4.2 --no-build-isolation
+
+    # install sentencepiece from https://github.com/google/sentencepiece
+    # since the version in pip is not compatible with the python version
+    git clone https://github.com/google/sentencepiece
+    cd sentencepiece
+    mkdir build
+    cd build
+    cmake .. -DSPM_ENABLE_SHARED=OFF -DCMAKE_INSTALL_PREFIX=./root
+    make install
+    cd ../python
+    python setup.py bdist_wheel
+    pip install dist/sentencepiece*.whl
+
+    cd ../../
+    echo "finished installing sentencepiece"
+
+    # install clip
+    pip install ftfy regex tqdm
+    pip install git+https://github.com/openai/CLIP.git
+
+    # install wandb
+    pip install wandb
+
+    # Add SETUID bit to the ldconfig binary so that non-root users can run it
+    chmod u+s /sbin/ldconfig.real
+
+    # set environment variables
+    echo "export LC_ALL='en_US.UTF-8'" >> $SINGULARITY_ENVIRONMENT
+    echo "export LD_LIBRARY_PATH='/usr/lib64-nvidia'" >> $SINGULARITY_ENVIRONMENT
+    echo "export LIBRARY_PATH='/usr/local/cuda/lib64/stubs'" >> $SINGULARITY_ENVIRONMENT
+
+    # set up the nvidia driver
+    ldconfig /usr/lib64-nvidia
+    ldconfig /.singularity.d/libs
+
+    # set up locale
+    locale-gen en_US.UTF-8
+
+    echo "export LD_LIBRARY_PATH='/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}'" >> $SINGULARITY_ENVIRONMENT
+    echo "/usr/lib/x86_64-linux-gnu" > /etc/ld.so.conf.d/cuda.conf
+    ldconfig
+
+
+%environment
+    export LD_LIBRARY_PATH="/usr/local/nvidia/lib:/usr/local/nvidia/lib64:${LD_LIBRARY_PATH}"
+    export CUDA_HOME=/usr/local/cuda
+    export LC_ALL='en_US.UTF-8'
+    export LD_LIBRARY_PATH='/usr/lib64-nvidia'
+    export LIBRARY_PATH='/usr/local/cuda/lib64/stubs'
+
+%runscript
+    exec /bin/bash "$@"

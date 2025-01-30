@@ -1,0 +1,17 @@
+__pycache__
+*.so
+build
+.coverage_*
+*.egg-info
+*~
+logs
+.vscode
+/.idea/
+model*.txt
+vlm_outputs
+/scripts/aws/simple_test/
+/scripts/aws/setup/
+/scripts/aws/node_test/
+/scripts/aws/dataset/
+/scripts/aws/convert/
+/eval_mm/

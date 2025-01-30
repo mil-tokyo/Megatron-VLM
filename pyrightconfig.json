@@ -1,0 +1,9 @@
+{
+    "exclude": [
+        "megatron",
+        "__pycache__",
+        "docs",
+        ".github",
+        "tests"
+    ]
+}
