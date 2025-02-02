@@ -267,14 +267,12 @@ class SavableDatasetWrapper(IterableDataset[Tuple[int, int, T]], Generic[T]):
         static, because `self` is actually passed as weakref proxy, to avoid keeping the dataset
         alive via the thread.
         """
-        # print(f"{id(self)}:{multiprocessing.current_process().ident} Worker command thread starting")
         try:
             while self._running:
                 try:
                     cmd_args = self._cmd_queues[self._worker_id].get(timeout=1)
                 except queue.Empty:
                     continue
-                # print(f"recv cmd {cmd_args}")
                 with self._command_lock:
                     cmd = cmd_args[0]
                     if cmd is None:
@@ -284,29 +282,24 @@ class SavableDatasetWrapper(IterableDataset[Tuple[int, int, T]], Generic[T]):
                         self._result_queues[self._worker_id].put(
                             {self._worker_id: fn(*cmd_args[1:])}
                         )
-                        # print(f"result sent")
                     except Exception as e:
                         traceback.print_exc()
                         self._result_queues[self._worker_id].put({self._worker_id: e})
-                        # print(f"exc sent")
         except BaseException:
             traceback.print_exc()
             raise
         finally:
             pass
-            # print(f"{id(self)}:{multiprocessing.current_process().ident} Worker command thread closing")
 
     def __len__(self):
         return len(self.dataset)
 
     def __del__(self):
         if self._cmd_thread is not None:
-            # print(f"{id(self)}:{multiprocessing.current_process().ident} Closing cmd thread")
             self._running = False
             self._cmd_thread.join()
             self._command_lock = None
             self._cmd_thread = None
-            # print(f"{id(self)}:{multiprocessing.current_process().ident} Cmd thread closed")
 
     def __iter__(self):
         # First: Set the worker offset globally for the current worker
@@ -340,8 +333,6 @@ class SavableDatasetWrapper(IterableDataset[Tuple[int, int, T]], Generic[T]):
                             self.worker_config.worker_deactivate()
                             dataset_has_samples = True
                             if self._skip_samples[self._worker_id] > 0:
-                                # Skip ahead to reach the start of the restored checkpoint
-                                # print(f"Skip [{self._worker_id}:{self._sample_index}] {src_data}")
                                 self._skip_samples[self._worker_id] -= 1
                                 self._sample_index += 1
                                 last_was_skip = True
@@ -353,15 +344,9 @@ class SavableDatasetWrapper(IterableDataset[Tuple[int, int, T]], Generic[T]):
                             self._store_checkpoint()
                             try:
                                 self._command_lock.release()
-                                # print(f"{id(self)}:{multiprocessing.current_process().ident} Lock released")
-                                # Commands may be executed only when data was yielded, not during
-                                # iteration fetching.
-                                # print(f"Yield next data [{self._worker_id}:{sample_index}] {src_data}")
                                 yield self._worker_id, sample_index, src_data
                             finally:
-                                # print(f"{id(self)}:{multiprocessing.current_process().ident} Lock acquiring")
                                 self._command_lock.acquire()
-                                # print(f"{id(self)}:{multiprocessing.current_process().ident} Lock acquired")
                             self.worker_config.worker_activate(self._sample_index)
                     finally:
                         self.worker_config.worker_deactivate()
@@ -370,7 +355,6 @@ class SavableDatasetWrapper(IterableDataset[Tuple[int, int, T]], Generic[T]):
                     if not dataset_has_samples:
                         break
         finally:
-            # print(f"{id(self)}:{multiprocessing.current_process().ident} Worker iter closing")
             # Always store a final checkpoint (it's likely to be saved)
             self._store_checkpoint(force=True)
 
@@ -393,7 +377,6 @@ class SavableDatasetWrapper(IterableDataset[Tuple[int, int, T]], Generic[T]):
             )
             or self._sample_index <= 1
         ):
-            # print(f"Storing checkpoint at {self._worker_id}:{self._sample_index}")
             self._last_checkpoints.append(
                 SavableCheckpoint(
                     state=self._save_state(),
@@ -474,7 +457,6 @@ class SavableDatasetWrapper(IterableDataset[Tuple[int, int, T]], Generic[T]):
         sample_index = last_sample_indexes[self._worker_id] + 1
         for checkpoint in reversed(self._last_checkpoints):
             if checkpoint.sample_index <= sample_index:
-                # print(f"Found cp for {sample_index} at {checkpoint.sample_index}")
                 return SavableDatasetCheckpoint(
                     dataset_state=checkpoint.dataset_state,
                     state=checkpoint.state,
@@ -784,21 +766,17 @@ class SavableDataLoader(DataLoader[T], Generic[T]):
             if self._persistent_iterator is None or self._persistent_iterator.finished:
                 self._persistent_iterator = InnerIterator(super().__iter__())
                 self._sample_idx = 0
-                # print("New Iterator", self._persistent_iterator)
             return self._persistent_iterator
         else:
             return InnerIterator(super().__iter__())
 
     def _worker_command(self, *cmd_args) -> List[Any]:
         """Executes a command in all workers and returns the results."""
-        # print(f"cmd: {cmd_args}")
         for cmd_queue in self.cmd_queues:
             cmd_queue.put(cmd_args)
-        # print(f"waiting for res")
         assert len(self.result_queues) == self.worker_config.num_workers
         res = {k: v for results_queue in self.result_queues for k, v in results_queue.get().items()}
         res = [res[i] for i in range(len(res))]
-        # print(f"res: {res}")
         for r in res:
             if isinstance(r, Exception):
                 raise r
@@ -831,7 +809,6 @@ class SavableDataLoader(DataLoader[T], Generic[T]):
             dataset_state=merged_states,
             next_worker_id=self._next_worker_id,
         )
-        # print("Merged state", merged_state)
 
         # Not distributed -> return the merged state
         return merged_state
@@ -873,7 +850,6 @@ class SavableDataLoader(DataLoader[T], Generic[T]):
         """
         # Fetch current rank's worker's state
         merged_state = self.save_state_rank()
-        # print("Merged state", merged_state)
 
         # Gather the merged states
         if torch.distributed.is_available() and torch.distributed.is_initialized():

@@ -44,7 +44,6 @@ def save_checkpoint(queue, args):
         exit(1)
 
     def queue_get(name=None):
-        # print(f"waiting for {name}" if name is not None else "waiting for None")
         val = queue.get()
         if val == "exit":
             print("Loader exited, exiting saver")

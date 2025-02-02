@@ -1079,7 +1079,6 @@ def load_checkpoint(model, optimizer, opt_param_scheduler, load_arg='load', stri
     # Model.
     strict = False if args.retro_add_retriever else strict
     if len(model) == 1:
-        # print(f"\n\nmodel: {model}\n\n")
         strict = False if args.pipeline_model_parallel_size > 1 else strict
         print(f"strict: {strict} (pp size: {args.pipeline_model_parallel_size})")
         model[0].load_state_dict(state_dict['model'], strict=strict)

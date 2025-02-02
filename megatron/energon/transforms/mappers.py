@@ -123,7 +123,6 @@ class ResizeMapper(TransformMapper[T.Resize]):
         # matrix = self.translate(0.25, 0.25) @ matrix
         # matrix = self.translate(0.1, 0) @ matrix
         dst_size = np.array((h, w), dtype=dst_size.dtype)
-        # print(f"Resize s={size}")
         return matrix, dst_size, (self.source_type.__name__, size)
 
     def interpolation(self) -> Optional[T.InterpolationMode]:
@@ -183,9 +182,6 @@ class RandomResizedCropMapper(TransformMapper[T.RandomResizedCrop]):
         self, matrix: np.ndarray, dst_size: np.ndarray
     ) -> Tuple[np.ndarray, np.ndarray, Tuple[Any, ...]]:
         top, left, height, width = self.get_params(dst_size)
-        # print(
-        #     "RandomResizedCrop", top, left, dst_size[0] - height - top, dst_size[1] - width - left
-        # )
         # Crop to left, top, height, width
         matrix = self.translate(-left, -top) @ matrix
         dst_size = np.array([height, width], dtype=dst_size.dtype)
@@ -214,7 +210,6 @@ class RandomHorizontalFlipMapper(TransformMapper[T.RandomHorizontalFlip]):
         if do_flip:
             matrix = self.hflip() @ matrix
             matrix = self.translate(dst_size[1], 0) @ matrix
-            # print(f"RandomHorizontalFlip")
         return matrix, dst_size, (self.source_type.__name__, do_flip)
 
 
@@ -231,7 +226,6 @@ class RandomVerticalFlipMapper(TransformMapper[T.RandomVerticalFlip]):
         if do_flip:
             matrix = self.vflip() @ matrix
             matrix = self.translate(0, dst_size[0]) @ matrix
-            # print(f"RandomVerticalFlip")
         return matrix, dst_size, (self.source_type.__name__, do_flip)
 
 
@@ -247,7 +241,6 @@ class RandomRotationMapper(TransformMapper[T.RandomRotation]):
         assert self.transform.center is None, "Only centered rotation is supported"
         degrees = self.transform.get_params(self.transform.degrees)
         rads = degrees * np.pi / 180
-        # print(f"Rotate deg={degrees}")
         orig_size = dst_size
         if self.transform.expand:
             # Compute size of rotated rectangle
@@ -320,7 +313,6 @@ class RandomCropMapper(TransformMapper[T.RandomCrop]):
             dst_size = np.array((th, tw), dtype=dst_size.dtype)
         else:
             dst_size = np.array((min(th, dst_size[0]), min(tw, dst_size[1])), dtype=dst_size.dtype)
-        # print(f"RandomCrop t=[{dx}, {dy}], s={dst_size}")
         return matrix, dst_size, (self.source_type.__name__, (j, i, th, tw))
 
     def fill(
@@ -371,9 +363,6 @@ class RandomPerspectiveMapper(TransformMapper[T.RandomPerspective]):
             startpoints, endpoints = self.transform.get_params(
                 dst_size[1], dst_size[0], self.transform.distortion_scale
             )
-            # print(
-            #     f"Perspective ds={self.transform.distortion_scale}: sp={startpoints} -> ep={endpoints}"
-            # )
             matrix = self.compute_homography(endpoints, startpoints) @ matrix
         return matrix, dst_size, (self.source_type.__name__, startpoints, endpoints)
 
@@ -407,5 +396,4 @@ class CenterCropMapper(TransformMapper[T.CenterCrop]):
 
         matrix = self.translate(shift_x, shift_y) @ matrix
         dst_size = np.array((th, tw), dtype=dst_size.dtype)
-        # print(f"CenterCrop t=[{dx}, {dy}], s={dst_size}")
         return matrix, dst_size, (self.source_type.__name__, (shift_y, shift_x, th, tw))

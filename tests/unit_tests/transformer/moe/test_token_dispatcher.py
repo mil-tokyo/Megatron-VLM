@@ -84,12 +84,6 @@ class MoEModelTestContainer:
         probs, indices = moe_layer.router(hidden_states)
         probs = torch.ones_like(probs) / moe_layer.router.topk
 
-        ## Uncomment these lines to assist in bug location.
-        # hidden_states = torch.ones_like(hidden_states) * torch.distributed.get_rank()
-        # hidden_states.requires_grad = True
-        # indices = torch.ones_like(indices) * torch.distributed.get_rank()
-        # print(permuted_local_hidden_states)
-
         (
             permuted_local_hidden_states,
             tokens_per_expert,

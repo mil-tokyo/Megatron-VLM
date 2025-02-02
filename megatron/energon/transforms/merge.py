@@ -90,7 +90,6 @@ class MergeTransform(torch.nn.Module):
             else:
                 fill_color = self.fill_value
             if np.allclose(matrix[2, :2], [0, 0]):
-                # print("PIL Affine")
                 return x.transform(
                     tuple(dst_size[::-1]),
                     PIL.Image.AFFINE,
@@ -99,7 +98,6 @@ class MergeTransform(torch.nn.Module):
                     fillcolor=fill_color,
                 )
             else:
-                # print("PIL Perspective")
                 return x.transform(
                     tuple(dst_size[::-1]),
                     PIL.Image.PERSPECTIVE,

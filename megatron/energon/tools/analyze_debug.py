@@ -424,8 +424,6 @@ def command(
 
     print(f"Found {len(key_index)} unique sample keys, {count} steps")
 
-    # print(f"Heatmap factors: {heatmap_sample_factor} samples, {heatmap_step_factor} steps")
-    # print(f"Heatmap max: {heatmap_sample_max} samples, {heatmap_step_max} steps")
     n_samples, n_steps = heatmap.save(heatmap_path, heatmap_gain)
     print(f"Wrote heatmap to {heatmap_path}")
     print("Heatmap axes:")

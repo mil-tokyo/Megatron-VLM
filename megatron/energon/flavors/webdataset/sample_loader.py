@@ -279,9 +279,6 @@ class WebdatasetSampleLoaderDataset(SavableDataset[FilteredSample]):
 
     def _shard_iter(self, shard_state: ShardState) -> Generator[FilteredSample, None, None]:
         """Iterates the samples in a shard (potentially resuming from a saved state)."""
-        # print(
-        #     f"Shard iter for shard {shard_state.shard.name} [{shard_state.shard.offset} +{shard_state.byte_offset}b, {shard_state.shard.offset + shard_state.shard.count} -{shard_state.byte_offset}b) starting"
-        # )
         if self.worker_config.should_log(level=2):
             self.worker_config.worker_log(
                 {
@@ -354,7 +351,6 @@ class WebdatasetSampleLoaderDataset(SavableDataset[FilteredSample]):
                         next_sample_offset_in_sub_tar + orig_shard_state_byte_offset
                     )
                     assert shard_state.byte_offset <= shard.byte_size
-                    # print(f"Yield {group['__key__']} @next: {key} @{shard_state.byte_offset}b")
 
                     shard_state.offset += 1
                     if group["__key__"] in self.exclude:
@@ -374,7 +370,6 @@ class WebdatasetSampleLoaderDataset(SavableDataset[FilteredSample]):
             raise FatalSampleError.from_sample_key(f"{shard.path}")
         except Exception as e:
             self.handler(e, shard.name)
-        # print(f"Shard iter for shard {shard.name} [{shard.offset}, {shard.count}) done")
 
     def _shards_iter(self, shards: List[ShardInfo]) -> Generator[FilteredSample, None, None]:
         """Iterates the samples in a list of shards, possibly looping over them indefinitely,
@@ -491,10 +486,6 @@ class WebdatasetSampleLoaderDataset(SavableDataset[FilteredSample]):
                 self._active_shards_state[worker_idx] = active_shards
                 self._pending_shards[worker_idx] = shards_order
 
-            # print(
-            #     f"Next shard iters generated for {self.worker_config.rank}:{self.worker_config.rank_worker_id()}: probs={shards_probs}"
-            # )
-
             # Iterate over the shard iterators
             while True:
                 if torch.count_nonzero(shards_probs).item() == 0:
@@ -525,16 +516,10 @@ class WebdatasetSampleLoaderDataset(SavableDataset[FilteredSample]):
                         shard_iters[rm_idx] = self._shard_iter(shard_state)
                         shards_probs[rm_idx] = shard.count
                         active_shards[rm_idx] = shard_state
-                        # print(
-                        #     f"Shard iter for {self.worker_config.rank}:{self.worker_config.rank_worker_id()} exhausted, taking next shard {shard.name} [{shard.offset}, {shard.offset + shard.count}), {len(shards_order)} shards left, probs={shards_probs}"
-                        # )
                     else:
                         shard_iters[rm_idx] = None
                         shards_probs[rm_idx] = 0
                         active_shards[rm_idx] = None
-                        # print(
-                        #     f"Shard iter for {self.worker_config.rank}:{self.worker_config.rank_worker_id()} exhausted, no next shards, probs={shards_probs}"
-                        # )
                     if self.worker_config.should_log(level=2):
                         self.worker_config.worker_log(
                             {
@@ -579,9 +564,6 @@ class WebdatasetSampleLoaderDataset(SavableDataset[FilteredSample]):
 
             self._epoch_count[worker_idx] += 1
             self._epoch_sample_count[worker_idx] = 0
-            # print(
-            #     f"Shard iters exhausted for {self.worker_config.rank}:{self.worker_config.rank_worker_id()} after {cnt} samples"
-            # )
             if not self.loop:
                 break
 
@@ -729,7 +711,6 @@ class WebdatasetSampleLoaderDataset(SavableDataset[FilteredSample]):
                     "state": str(state),
                 }
             )
-        # print(f"Restore state {state}")
         if state is None:
             # Restore initial state
             self._worker_rng.restore_state(None)

@@ -213,9 +213,6 @@ class Attention(MegatronModule, ABC):
         key = inference_key_memory[:sequence_end, batch_start:batch_end, ...]
         value = inference_value_memory[:sequence_end, batch_start:batch_end, ...]
 
-        # print(f"{self.layer_number} past key (~{sequence_end}): {key.mean().item()}")
-        # print(f"{self.layer_number} past value (~{sequence_end}): {value.mean().item()}\n")
-
         # adjust the key rotary positional embedding
         if rotary_pos_emb is not None:
             q_pos_emb, k_pos_emb = rotary_pos_emb

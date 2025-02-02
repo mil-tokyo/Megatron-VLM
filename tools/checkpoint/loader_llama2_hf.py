@@ -94,23 +94,14 @@ def set_attn_state(args, layer, hf_layer):
     assert nh % ng == 0
 
     # Copy weights (re-order dimensions for Megatron).
-    # attn.query_key_value.weight.data.copy_(torch.cat([
-    # print(f"ng: {ng}, dim: {dim}, nh: {nh}, dim*nh//ng: {dim*nh//ng}")
-    # print(f"q_proj size: {hf_attn.q_proj.weight.size()}")
-    # print(f"k_proj size: {hf_attn.k_proj.weight.size()}")
-    # print(f"v_proj size: {hf_attn.v_proj.weight.size()}")
-    # print(f"linear_qkv size: {attn.linear_qkv.weight.size()}")
     attn.linear_qkv.weight.data.copy_(torch.cat([
         hf_attn.q_proj.weight.reshape((ng, dim*nh//ng, -1)),
         hf_attn.k_proj.weight.reshape((ng, dim, -1)),
         hf_attn.v_proj.weight.reshape((ng, dim, -1)),
     ], dim=1).reshape((-1, args.hidden_size)))
-    # attn.dense.weight.data.copy_(hf_attn.o_proj.weight)
     attn.linear_proj.weight.data.copy_(hf_attn.o_proj.weight)
 
-    # ADD!
     # Copy weights of layer norm.
-    # print("copying layer norm weights...")
     layer.input_layernorm.weight.data.copy_(hf_layer.input_layernorm.weight)
     layer.pre_mlp_layernorm.weight.data.copy_(hf_layer.post_attention_layernorm.weight)
 

@@ -693,7 +693,6 @@ class SwinTransformer(nn.Module):
                         x_ = self.norm(x_)
 
                     x_avg = torch.flatten(self.avgpool(x_.transpose(1, 2)), 1)  # B C     
-                    # print(f'Stage {i},  x_avg {x_avg.shape}')          
                     output.append(x_avg)
 
                 start_blk = 0

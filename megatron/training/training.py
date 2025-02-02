@@ -504,7 +504,6 @@ def get_optimizer_param_scheduler(optimizer):
         if args.lr_decay_iters is None:
             args.lr_decay_iters = args.train_iters
         lr_decay_steps = args.lr_decay_iters * args.global_batch_size
-        # print(f"lr_decay_steps: {args.lr_decay_iters} * {args.global_batch_size} = {lr_decay_steps}")
         wd_incr_steps = args.train_iters * args.global_batch_size
         wsd_decay_steps = None
         if args.lr_wsd_decay_iters is not None:
@@ -645,7 +644,6 @@ def train_step(forward_step_func, data_iterator,
     # Update parameters.
     timers('optimizer', log_level=1).start(barrier=args.barrier_with_L1_time)
     update_successful, grad_norm, num_zeros_in_grad = optimizer.step()
-    # print(f"  grad_norm: {grad_norm}")
     timers('optimizer').stop()
 
     # Vision momentum.
@@ -696,7 +694,6 @@ def training_log(
         grad_norm, params_norm, num_zeros_in_grad, skipped_iteration=0
 ):
     """Log training information such as losses, timing, ...."""
-    # print(f"training_log: iteration: {iteration}")
     args = get_args()
     timers = get_timers()
     writer = get_tensorboard_writer()

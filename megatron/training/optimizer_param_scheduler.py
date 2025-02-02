@@ -85,8 +85,6 @@ class OptimizerParamScheduler(object):
     def get_lr(self, param_group):
         """Learning rate decay functions from:
               https://openreview.net/pdf?id=BJYwwY9ll pg. 4"""
-        # print(f"optim step: {self.num_steps}; lr_decay_steps: {self.lr_decay_steps}")
-
         max_lr = param_group.get('max_lr', self.max_lr)
         min_lr = param_group.get('min_lr', self.min_lr)
 

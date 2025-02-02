@@ -267,10 +267,6 @@ def set_vision_module_state(args, model, hf_model):
     for layer_idx in range(args.vision_num_layers):
         set_vision_layer_state(args, vision_module, hf_vision_module, layer_idx)
 
-    # set final layer norm; actually this is not used in LLaVA
-    # vision_module.transformer.final_layernorm.weight.data.copy_(hf_vision_module.vision_model.post_layernorm.weight)
-    # vision_module.transformer.final_layernorm.bias.data.copy_(hf_vision_module.vision_model.post_layernorm.bias)
-
 
 def set_projector_state(args, model, hf_model):
     '''Set projector params.'''
@@ -349,54 +345,13 @@ def set_attn_state(args, layer, hf_layer):
     assert nh % ng == 0
 
     # Copy weights (re-order dimensions for Megatron).
-    # q_proj.weight: (1024, 1024) -> (16, 128, 512)
     reshaped_q = hf_attn.q_proj.weight.reshape((nh, dim*nh//ng, -1))
     reshaped_k = hf_attn.k_proj.weight.reshape((nh, dim, -1))
     reshaped_v = hf_attn.v_proj.weight.reshape((nh, dim, -1))
-    # print(f"nh: {nh}, dim: {dim}, ng: {ng}")
-    # print(f"hf q_proj weight size: {hf_attn.q_proj.weight.size()} -> {reshaped_q.size()}")
-    # print(f"hf k_proj weight size: {hf_attn.k_proj.weight.size()} -> {reshaped_k.size()}")
-    # print(f"hf v_proj weight size: {hf_attn.v_proj.weight.size()} -> {reshaped_v.size()}")
-
-    # llava7b (tp2, pp1) (vision)
-    # nh: 16, dim: 64, ng: 16
-    # hf q_proj weight size: torch.Size([1024, 1024]) -> torch.Size([16, 64, 1024])
-    # hf k_proj weight size: torch.Size([1024, 1024]) -> torch.Size([16, 64, 1024])
-    # hf v_proj weight size: torch.Size([1024, 1024]) -> torch.Size([16, 64, 1024])
-    # concat qkv size: torch.Size([16, 192, 1024])
-    # attn.linear_qkv.weight.size(): torch.Size([3072, 1024])
-
-    # llava13b (tp4, pp1) (text)
-    # nh: 40, dim: 128, ng: 40
-    # hf q_proj weight size: torch.Size([5120, 5120]) -> torch.Size([40, 128, 5120])
-    # hf k_proj weight size: torch.Size([5120, 5120]) -> torch.Size([40, 128, 5120])
-    # hf v_proj weight size: torch.Size([5120, 5120]) -> torch.Size([40, 128, 5120])
-    # concat qkv size: torch.Size([40, 384, 5120])
-    # attn.linear_qkv.weight.size(): torch.Size([15360, 5120])
-
-    # llava1b (tp1, pp1) (text)
-    # nh: 32, dim: 64, ng: 4
-    # hf q_proj weight size: torch.Size([2048, 2048]) -> torch.Size([32, 512, 256])
-    # hf k_proj weight size: torch.Size([256, 2048]) -> torch.Size([32, 64, 256])
-    # hf v_proj weight size: torch.Size([256, 2048]) -> torch.Size([32, 64, 256])
-    # concat qkv size: torch.Size([32, 640, 256])
-    # attn.linear_qkv.weight.size(): torch.Size([2560, 2048])
     concat_qkv = torch.cat([reshaped_q, reshaped_k, reshaped_v], dim=1)
-    # print(f"concat qkv size: {concat_qkv.size()}")
-    attn.linear_qkv.weight.data.copy_(concat_qkv.reshape((-1, args.hidden_size)))  # (3072, 1024) <- this has to be same as linear_qkv
-    # print(f"attn.linear_qkv.weight.size(): {attn.linear_qkv.weight.size()}")
+    attn.linear_qkv.weight.data.copy_(concat_qkv.reshape((-1, args.hidden_size)))
 
     if isinstance(hf_attn, CLIPAttention) or isinstance(hf_attn, SiglipSdpaAttention):
-        # print(f"ng: {ng}, dim: {dim}, nh: {nh}, dim*nh//ng: {dim * nh // ng}")
-        # print(f"reshaped q_proj size: {hf_attn.q_proj.weight.reshape((ng, dim * nh // ng, -1)).size()}")
-        # print(f"reshaped k_proj size: {hf_attn.k_proj.weight.reshape((ng, dim * nh // ng, -1)).size()}")
-        # print(f"reshaped v_proj size: {hf_attn.v_proj.weight.reshape((ng, dim * nh // ng, -1)).size()}")
-        # print(f"attn.linear_qkv.weight.size(): {attn.linear_qkv.weight.size()}")
-        #
-        # print(f"attn.linear_qkv.bias.size(): {attn.linear_qkv.bias.size()}")
-        # print(f"hf_attn.q_proj.bias.size(): {hf_attn.q_proj.bias.size()}")
-        # print(f"hf_attn.k_proj.bias.size(): {hf_attn.k_proj.bias.size()}")
-        # print(f"hf_attn.v_proj.bias.size(): {hf_attn.v_proj.bias.size()}")
         attn.linear_qkv.bias.data.copy_(torch.cat([
             hf_attn.q_proj.bias.reshape((ng, -1)),
             hf_attn.k_proj.bias.reshape((ng, -1)),
@@ -410,9 +365,7 @@ def set_attn_state(args, layer, hf_layer):
         else:
             attn.linear_proj.weight.data.copy_(hf_attn.o_proj.weight)
 
-    # ADD!
     # Copy weights and biases of layer norm.
-    # print("copying layer norm weights...")
     if isinstance(hf_attn, CLIPAttention) or isinstance(hf_layer, SiglipEncoderLayer):
         # weight
         layer.input_layernorm.weight.data.copy_(hf_layer.layer_norm1.weight)
@@ -437,12 +390,10 @@ def set_mlp_state(args, layer, hf_layer):
     mlp = layer.mlp
     hf_mlp = hf_layer.mlp
 
-    # mlp.dense_h_to_4h.weight.data.copy_(torch.cat([
     mlp.linear_fc1.weight.data.copy_(torch.cat([
         hf_mlp.gate_proj.weight,
         hf_mlp.up_proj.weight,
     ], dim=0))
-    # mlp.dense_4h_to_h.weight.data.copy_(hf_mlp.down_proj.weight)
     mlp.linear_fc2.weight.data.copy_(hf_mlp.down_proj.weight)
 
 
@@ -456,18 +407,6 @@ def set_mlp_state_clip(args, layer, hf_layer) -> None:
     """
     mlp = layer.mlp
     hf_mlp = hf_layer.mlp
-    # hf_layer.mlp:
-    # CLIPMLP(
-    #   (activation_fn): QuickGELUActivation()
-    #   (fc1): Linear(in_features=1024, out_features=4096, bias=True)
-    #   (fc2): Linear(in_features=4096, out_features=1024, bias=True)
-    # )
-
-    # layer.mlp:
-    # MLP(
-    #   (linear_fc1): TEColumnParallelLinear(in_features=1024, out_features=22016, bias=True)
-    #   (linear_fc2): TERowParallelLinear(in_features=11008, out_features=1024, bias=True)
-    # )
 
     # copy weights and biases
     mlp.linear_fc1.weight.data.copy_(hf_mlp.fc1.weight)
@@ -479,15 +418,11 @@ def set_mlp_state_clip(args, layer, hf_layer) -> None:
 def set_layer_state(args, model, hf_model, layer_idx):
     '''Set transformer layer params.'''
 
-    # layer = model.language_model.encoder.layers[layer_idx]
     layer = model.decoder.layers[layer_idx]
     hf_layer = hf_model.model.layers[layer_idx]
 
     set_attn_state(args, layer, hf_layer)
     set_mlp_state(args, layer, hf_layer)
-    # layer.input_norm.weight.data.copy_(hf_layer.input_layernorm.weight)
-    # layer.input_layernorm.weight.data.copy_(hf_layer.input_layernorm.weight)
-    # layer.post_attention_norm.weight.data.copy_(hf_layer.post_attention_layernorm.weight)
 
 
 def load_checkpoint_to_model(args):
@@ -577,9 +512,6 @@ def _load_checkpoint(queue, args):
     margs = parse_args()
     margs.tokenizer_model = args.tokenizer_model
     margs.save_dir = args.save_dir
-    # added
-    # margs.use_dist_ckpt = args.use_dist_ckpt
-    # print(f"overwrite margs use_dist_ckpt: {margs.use_dist_ckpt}")
     print("loading args from checkpoint...")
     load_args_from_checkpoint(margs)
 
@@ -591,7 +523,6 @@ def _load_checkpoint(queue, args):
     margs = validate_args(margs)
 
     def check_for_arg(arg_name, default=None):
-        # print(f"checking for arg {arg_name}")
         if getattr(margs, arg_name, None) is None:
             if default is not None:
                 setattr(margs, arg_name, default)
@@ -679,12 +610,6 @@ def _load_checkpoint(queue, args):
     queue.put(md)
 
     def queue_put(name, msg):
-        # print(f"sending {name}")
-        # save the name of the message to txt file like:
-        # name
-        #    message key1
-        #    message key2
-        #    ...
         msg["name"] = name
         print(f"queue put: {name}")
         queue.put(msg)
@@ -709,20 +634,12 @@ def _load_checkpoint(queue, args):
     # send vision transformer layers
     print(f"\nsending {margs.vision_num_layers} vision transformer layers...")
     for layer_num in range(margs.vision_num_layers):
-        # print(f"processing vision layer {layer_num}...")
         message = {}
         # Get non-parallel tensors from tp_rank 0.
         if layer_num == margs.vision_num_layers - 1:
             continue
         layer = model.vision_model.transformer.layers[layer_num]
 
-        # layers to send:
-        # - self_attention.linear_proj
-        # - self_attention.linear_qkv
-        # - input_layernorm
-        # - mlp.linear_fc1
-        # - mlp.linear_fc2
-        # - pre_mlp_layernorm
         layer_state_dict_keys = layer.state_dict().keys()
         layer_to_send = [_l for _l in layer_state_dict_keys if _l.endswith(".weight") or _l.endswith(".bias")]
 
@@ -756,7 +673,6 @@ def _load_checkpoint(queue, args):
     queue_put("embeddings", message)
 
     for layer_num in range(margs.num_layers):
-        # print(f"processing language layer {layer_num}...")
         message = {}
 
         # Get non-parallel tensors from tp_rank 0.

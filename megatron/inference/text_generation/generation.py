@@ -199,7 +199,6 @@ def generate_tokens_probs_and_return_on_first_stage(
 
                 # Sample.
                 last_token_logits = logits[:, -1, :]
-                # print("last_token_logits: ", last_token_logits)
                 new_sample = sample(last_token_logits,
                                     top_k=top_k,
                                     top_p=top_p,

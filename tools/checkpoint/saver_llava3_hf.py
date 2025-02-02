@@ -128,7 +128,6 @@ def save_checkpoint(queue: mp.Queue, args):
         for key, value in message.items():
             if key == "name":
                 continue
-            # print(f"vision transformer layer {i_layer} {key} {value.size()}")
         suffix = f'model.vision_tower.vision_model.encoder.layers.{i_layer}.'
         set_hf_param(suffix + 'layer_norm1', message["input norm weight"])
         set_hf_param(suffix + 'layer_norm1', message["input norm bias"], bias=True)
@@ -160,33 +159,16 @@ def save_checkpoint(queue: mp.Queue, args):
 
         qkv_bias = qkv_bias.view(16, -1)  # (16, 192)
         q_bias, k_bias, v_bias = torch.split(qkv_bias, qkv_bias.size(-1) // 3, dim=1)  # (16, 64) x 3
-        # print(q_bias.size(), k_bias.size(), v_bias.size())
         q_bias = q_bias.reshape(-1)
         k_bias = k_bias.reshape(-1)
         v_bias = v_bias.reshape(-1)
 
-        # print(f"qkv bias size: {qkv_bias.size()}")
-        # torch.save(qkv_bias, f"qkv_weights/qkv_bias_{i_layer}.pt")
-
-        # qkv_bias = torch.split(qkv_bias, [
-        #     llava_conf.vision_config.hidden_size,
-        #     llava_conf.vision_config.hidden_size,
-        #     llava_conf.vision_config.hidden_size,
-        # ], dim=0)
-        # set_hf_param(suffix + 'self_attn.q_proj', qkv_bias[0], bias=True)
-        # set_hf_param(suffix + 'self_attn.k_proj', qkv_bias[1], bias=True)
-        # set_hf_param(suffix + 'self_attn.v_proj', qkv_bias[2], bias=True)
         set_hf_param(suffix + 'self_attn.q_proj', q_bias, bias=True)
         set_hf_param(suffix + 'self_attn.k_proj', k_bias, bias=True)
         set_hf_param(suffix + 'self_attn.v_proj', v_bias, bias=True)
         set_hf_param(suffix + 'self_attn.out_proj', message["dense bias"], bias=True)
         set_hf_param(suffix + 'mlp.fc1', message["mlp l0 bias"], bias=True)
         set_hf_param(suffix + 'mlp.fc2', message["mlp l1 bias"], bias=True)
-
-    # 1.3 final norm
-    # message = queue_get('vision final layer norm')
-    # set_hf_param('model.vision_tower.vision_model.post_layernorm', message["final layer norm weight"])
-    # set_hf_param('model.vision_tower.vision_model.post_layernorm', message["final layer norm bias"], bias=True)
 
     # 2. Adapter
     message = queue_get("adapter")
@@ -210,7 +192,6 @@ def save_checkpoint(queue: mp.Queue, args):
         set_hf_param(suffix + 'mlp.up_proj', message["mlp l0 weight V"])
         qkv_weight = message["qkv weight"]
 
-        # print(f"qkv weight size: {qkv_weight.size()}")
         qkv_weight = qkv_weight.view(text_conf.num_key_value_heads, -1, text_conf.hidden_size)
         qkv_weight = torch.split(qkv_weight, [
             text_conf.hidden_size // text_conf.num_key_value_heads,

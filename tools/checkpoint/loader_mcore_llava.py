@@ -92,10 +92,6 @@ def load_llava_args_from_checkpoint(args):
     args.projector_gated_linear_unit = False
     args.projector_swiglu = False
 
-    # print(f"args: {args}")
-
-    # args.global_batch_size = 1024
-
     args.iteration = 1  # '0', 'release' don't work
     args.add_position_embedding = False
     args.use_rotary_position_embeddings = True
@@ -354,11 +350,6 @@ def _load_checkpoint(queue, args):
                     except Exception as e:
                         print(f"  {name} {key}: {e}")
 
-        # # save as pt
-        # save_path = os.path.join(args.save_dir, f"{name}.pt")
-        # torch.save(msg, save_path)
-        # print(f"loader_mcore_llava | saved {name} to {save_path}")
-
     # 1. Send Encoders
     # 1.1 Embeddings (conv1, position_embeddings, ln_pre)
     # note: in embeddings, tensor parallelism is not used, so we just send the first model
@@ -472,23 +463,13 @@ def _load_checkpoint(queue, args):
                 if vp_rank == 0:
                     all_models.append(get_models(tp_size, md.params_dtype))
             models = all_models[pp_rank][vp_rank]
-            # print(f"model_{pp_rank}_{vp_rank}: {models}")
             print(f"loader_mcore_llava | model_{pp_rank}_{vp_rank}")
             for layer_num, layer in enumerate(models[0].language_model.decoder.layers):
                 message = {}
 
                 # Get non-parallel tensors from tp_rank 0
-                # message["input norm weight"] = layer.self_attention.linear_qkv.layer_norm_weight.data
                 message["input norm weight"] = layer.input_layernorm.weight.data
-                # if norm_has_bias:
-                #     message["input norm bias"] = layer.self_attention.linear_qkv.layer_norm_bias.data
-                # message["post norm weight"] = layer.mlp.linear_fc1.layer_norm_weight.data
                 message["pre mlp norm weight"] = layer.pre_mlp_layernorm.weight.data
-                # if norm_has_bias:
-                #     message["post norm bias"] = layer.mlp.linear_fc1.layer_norm_bias.data
-                # if md.linear_bias:
-                #     message["dense bias"] = layer.self_attention.linear_proj.bias.data
-                #     message["mlp l1 bias"] = layer.mlp.linear_fc2.bias.data
 
                 # Grab all parallel tensors for this layer
                 qkv_weight = []
@@ -503,9 +484,6 @@ def _load_checkpoint(queue, args):
                     dense_weight.append(layer.self_attention.linear_proj.weight.data)
                     mlp_l0_weight.append(layer.mlp.linear_fc1.weight.data)
                     mlp_l1_weight.append(layer.mlp.linear_fc2.weight.data)
-                    # if md.linear_bias:
-                    #     qkv_bias.append(layer.self_attention.linear_qkv.bias.data)
-                    #     mlp_l0_bias.append(layer.mlp.linear_fc1.bias.data)
 
                 # Handle gated linear units
                 if md.swiglu:

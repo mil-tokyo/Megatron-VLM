@@ -134,8 +134,6 @@ def loss_func(loss_mask: torch.Tensor, output_tensor: torch.Tensor):
     total_tokens = loss_mask.sum()
     total_loss = torch.sum(losses.view(-1) * loss_mask)
     loss = torch.cat([total_loss.view(1), total_tokens.view(1)])
-    # print(f"loss_mask: {loss_mask.tolist()}")
-    # print(f"{total_tokens=}, {total_loss=}")
 
     if args.context_parallel_size > 1:
         torch.distributed.all_reduce(loss, group=mpu.get_context_parallel_group())

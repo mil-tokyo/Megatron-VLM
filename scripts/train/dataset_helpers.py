@@ -353,9 +353,6 @@ class TaskEncoder(DefaultTaskEncoder[OCRSample, OCRSample, ImageTaskBatch, dict]
         answer_token = self.tokenizer.tokenize(answer, add_special_tokens=False)
 
         prompt_len = len(question_token) - 1  # do not count <image> tokens
-        # print(f"prompt_len (dataset_helpers): {prompt_len}")
-        # print(f"question_token (dataset_helpers): {question_token}")
-        # print(f"answer_token (dataset_helpers): {answer_token}")
 
         seq_len = self.seq_len + 4
 
@@ -367,7 +364,6 @@ class TaskEncoder(DefaultTaskEncoder[OCRSample, OCRSample, ImageTaskBatch, dict]
             text_sample = text_sample[:seq_len]
             pad_len = 0
         text_sample = np.pad(text_sample, (0, pad_len), mode='constant', constant_values=self.tokenizer.pad)
-        # print(f"text: {self.tokenizer._tokenizer.decode(text_sample, skip_special_tokens=True)}")
 
         return ImageTaskSample(
             __key__=sample.__key__,

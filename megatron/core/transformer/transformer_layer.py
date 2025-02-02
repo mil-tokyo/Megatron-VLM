@@ -175,9 +175,6 @@ class TransformerLayer(MegatronModule, BaseTransformerLayer):
         inference_params=None,
         packed_seq_params=None,
     ):
-        # hidden_states: [s, b, h]
-        # print(f"TransformerLayer ({self.layer_number}): hidden_states: {hidden_states.mean().item()} - {hidden_states.size()}")
-
         # Residual connection.
         residual = hidden_states
 
@@ -187,15 +184,8 @@ class TransformerLayer(MegatronModule, BaseTransformerLayer):
         # )
         hidden_states = hidden_states.contiguous()
         input_layernorm_output = self.input_layernorm(hidden_states)
-        # print(f"TransformerLayer ({self.layer_number}): input_layernorm_output: {input_layernorm_output.mean().item()} - {input_layernorm_output.size()}")
 
         # Self attention.
-        # print(f"TransformerLayer ({self.layer_number}): self_attention: {self.self_attention} - {rotary_pos_emb}")
-        # メモ：この直前まではhuggingfaceと一致している
-        # for sanity check, temporarily set the bias to zero
-        # self.self_attention.linear_proj.bias.data.zero_()
-        # self.self_attention.linear_qkv.bias.data.zero_()
-
         attention_output_with_bias = self.self_attention(
             input_layernorm_output,
             attention_mask=attention_mask,
@@ -203,8 +193,6 @@ class TransformerLayer(MegatronModule, BaseTransformerLayer):
             rotary_pos_emb=rotary_pos_emb,
             packed_seq_params=packed_seq_params,
         )
-        # print(f"TransformerLayer ({self.layer_number}): attention_output_with_bias: {attention_output_with_bias[0].mean().item()} - {attention_output_with_bias[0].size()}")
-        # print(f"TransformerLayer ({self.layer_number}): attention_output plus bias: {(attention_output_with_bias[0] + attention_output_with_bias[1]).mean().item()} - {(attention_output_with_bias[0] + attention_output_with_bias[1]).size()}")
 
         # TODO: could we move `bias_dropout_add_exec_handler` itself
         # inside the module provided in the `bias_dropout_add_spec` module?
@@ -218,7 +206,6 @@ class TransformerLayer(MegatronModule, BaseTransformerLayer):
 
         # Optional Layer norm after self-attention
         pre_cross_attn_layernorm_output = self.pre_cross_attn_layernorm(hidden_states)
-        # print(f"TransformerLayer ({self.layer_number}): pre_cross_attn_layernorm_output: {pre_cross_attn_layernorm_output.mean().item()} - {pre_cross_attn_layernorm_output.size()}")
 
         # Cross attention.
         attention_output_with_bias = self.cross_attention(
@@ -227,7 +214,6 @@ class TransformerLayer(MegatronModule, BaseTransformerLayer):
             key_value_states=context,
             inference_params=inference_params,
         )
-        # print(f"TransformerLayer ({self.layer_number}): attention_output_with_bias: {attention_output_with_bias.mean().item()} - {attention_output_with_bias.size()}")
 
         if isinstance(attention_output_with_bias, dict) and "context" in attention_output_with_bias:
             context = attention_output_with_bias["context"]
@@ -245,12 +231,9 @@ class TransformerLayer(MegatronModule, BaseTransformerLayer):
         # Optional Layer norm post the cross-attention.
         hidden_states = hidden_states.contiguous()
         pre_mlp_layernorm_output = self.pre_mlp_layernorm(hidden_states)
-        # print(f"TransformerLayer ({self.layer_number}): pre_mlp_layernorm_output: {pre_mlp_layernorm_output.mean().item()} - {pre_mlp_layernorm_output.size()}")
 
         # MLP.
         mlp_output_with_bias = self.mlp(pre_mlp_layernorm_output)
-        # print(f"TransformerLayer ({self.layer_number}): mlp_output_with_bias: {mlp_output_with_bias[0].mean().item()} - {mlp_output_with_bias[0].size()}")
-        # print(f"TransformerLayer ({self.layer_number}): mlp_output plus bias: {(mlp_output_with_bias[0] + mlp_output_with_bias[1]).mean().item()} - {(mlp_output_with_bias[0] + mlp_output_with_bias[1]).size()}")
 
         # Optional Layer norm post the MLP.
         # if mlp_output_with_bias is tuple, use the first element
@@ -260,8 +243,6 @@ class TransformerLayer(MegatronModule, BaseTransformerLayer):
             post_mlp_layernorm_output = (post_mlp_layernorm_output, mlp_output_with_bias[1])
         else:
             post_mlp_layernorm_output = self.post_mlp_layernorm(mlp_output_with_bias)
-        # print(f"TransformerLayer ({self.layer_number}): post_mlp_layernorm_output: {post_mlp_layernorm_output[0].mean().item()} - {post_mlp_layernorm_output[0].size()}")
-        # print(f"TransformerLayer ({self.layer_number}): post_mlp_layernorm_output plus bias: {(post_mlp_layernorm_output[0] + post_mlp_layernorm_output[1]).mean().item()} - {(post_mlp_layernorm_output[0] + post_mlp_layernorm_output[1]).size()}")
 
         # TODO: could we move `bias_dropout_add_exec_handler` itself
         # inside the module provided in the `bias_dropout_add_spec` module?

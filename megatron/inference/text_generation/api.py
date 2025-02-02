@@ -57,8 +57,6 @@ def generate_and_post_process(model,
         random_seed=random_seed)
 
     # Only post-process on first stage.
-    # print(f"generated tokens: {tokens}")
-    # print(f"max probs: {output_log_probs}")
     if mpu.is_pipeline_first_stage():
         tokens, prompts_plus_generations, prompts_plus_generations_segments = \
             detokenize_generations(tokens, lengths, True)

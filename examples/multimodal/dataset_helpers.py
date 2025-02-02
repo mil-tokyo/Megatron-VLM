@@ -242,7 +242,6 @@ class Tokenizer:
                 print("NLTK is not available to split sentences.")
                 exit()
             library = "tokenizers/punkt/{}.pickle".format("english")
-            # print("loading: " + library)
             splitter = nltk.load(library)
             if self.args.keep_newlines:
                 # this prevents punkt from eating newlines after sentences

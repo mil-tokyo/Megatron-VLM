@@ -94,7 +94,6 @@ def read_prediction(prediction_file):
         for i, line in enumerate(tqdm(f)):
             if prediction_file.endswith("jsonl"):
                 line = json.loads(line)["pred"]
-                # print(line)
             line = line.replace("Answer:", "")
             line = line.replace("Answer: ", "")
             line = line.replace('????  ', "")

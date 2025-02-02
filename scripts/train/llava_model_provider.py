@@ -54,8 +54,6 @@ def model_provider(add_encoder: bool = True, pre_process=True, post_process=True
 
     load_args_from_checkpoint(args)
 
-    # print(f"args (in VLM provider): {args}")
-
     print_rank_0('building a multimodal model ...')
     language_transformer_config = core_transformer_config_from_args(get_args())
 

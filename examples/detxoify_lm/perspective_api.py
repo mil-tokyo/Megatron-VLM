@@ -144,7 +144,6 @@ def main():
         cur_scores = toxicity_scores[i*25:(i+1)*25]
         max_scores.append(max(cur_scores))
         proportions.append((cur_scores > 0.5).sum())
-    # print(proportions)
 
     max_scores = np.array(max_scores)
     proportions = np.array(proportions)

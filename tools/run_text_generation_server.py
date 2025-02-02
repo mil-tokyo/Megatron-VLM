@@ -49,7 +49,6 @@ def model_provider(pre_process=True, post_process=True):
     args.untie_embeddings_and_output_weights = True
     args.position_embedding_type = 'rope'
 
-    # print(f"pretrain_gpt config: {config}")
     model = GPTModel(
         config=config,
         transformer_layer_spec=transformer_layer_spec,

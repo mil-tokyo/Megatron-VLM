@@ -396,7 +396,6 @@ def validate_args(args, defaults={}):
 
     if args.kv_channels is None:
         assert args.hidden_size % args.num_attention_heads == 0
-        # print(f"set kv_channels ({args.hidden_size // args.num_attention_heads}) = hidden_size ({args.hidden_size}) // num_attention_heads ({args.num_attention_heads})")
         args.kv_channels = args.hidden_size // args.num_attention_heads
 
     if args.seq_length is not None and args.context_parallel_size > 1:

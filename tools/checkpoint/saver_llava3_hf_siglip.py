@@ -126,7 +126,6 @@ def save_checkpoint(queue: mp.Queue, args):
         for key, value in message.items():
             if key == "name":
                 continue
-            # print(f"vision transformer layer {i_layer} {key} {value.size()}")
         suffix = f'model.vision_tower.vision_model.encoder.layers.{i_layer}.'
         set_hf_param(suffix + 'layer_norm1', message["input norm weight"])
         set_hf_param(suffix + 'layer_norm1', message["input norm bias"], bias=True)
@@ -153,7 +152,6 @@ def save_checkpoint(queue: mp.Queue, args):
 
         qkv_bias = qkv_bias.view(16, -1)  # (16, 192)
         q_bias, k_bias, v_bias = torch.split(qkv_bias, qkv_bias.size(-1) // 3, dim=1)  # (16, 64) x 3
-        # print(q_bias.size(), k_bias.size(), v_bias.size())
         q_bias = q_bias.reshape(-1)
         k_bias = k_bias.reshape(-1)
         v_bias = v_bias.reshape(-1)
@@ -193,7 +191,6 @@ def save_checkpoint(queue: mp.Queue, args):
         set_hf_param(suffix + 'mlp.up_proj', message["mlp l0 weight V"])
         qkv_weight = message["qkv weight"]
 
-        # print(f"qkv weight size: {qkv_weight.size()}")
         qkv_weight = qkv_weight.view(text_conf.num_key_value_heads, -1, text_conf.hidden_size)
         qkv_weight = torch.split(qkv_weight, [
             text_conf.hidden_size // text_conf.num_key_value_heads,
